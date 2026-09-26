@@ -1,0 +1,11 @@
+{
+  "name": "observa-stack",
+  "version": "0.1.0",
+  "description": "Observability as code: OTel collector + Loki + Grafana (dashboards provisionados) + instrumentacao enxuta com fallback",
+  "main": "src/instrumentar.js",
+  "type": "module",
+  "license": "MIT",
+  "author": "Rodolfo Franco (FrancosCorporation)",
+  "scripts": { "start": "docker compose up", "test": "node --test test/instrumentar-test.mjs" },
+  "engines": { "node": ">=18" }
+}

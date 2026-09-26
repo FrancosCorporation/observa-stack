@@ -1,6 +1,7 @@
 # Observa Stack — Observability as Code
 
-![Status](https://img.shields.io/badge/status-em%20constru%C3%A7%C3%A3o-orange)
+![Status](https://img.shields.io/badge/M1-funcionando%20(3%2F3%20testes)-brightgreen)
+![CI](https://img.shields.io/badge/CI-test%20%2B%20config%20%2B%20license-blue)
 ![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
 ![OTel](https://img.shields.io/badge/OpenTelemetry-traces%20%2B%20metrics-425CC7)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -12,11 +13,28 @@ alerts via webhook and documented SLOs.
 > 🇧🇷 Observabilidade como código: compose com otel-collector + Loki + Grafana com
 > dashboards provisionados, app demo instrumentado, alertas via webhook e SLOs documentados.
 
-## Features (roadmap)
+## Features
 
-- [ ] **M1a** — Compose: otel-collector + loki + grafana + dashboards-as-code
-- [ ] **M1b** — Demo app instrumented (kanbanex as the target!)
-- [ ] **M2** — Alerts (webhook → Telegram), SLOs, versioned dashboards
+- [x] **M1a** — Compose: otel-collector (OTLP gRPC+HTTP) + Loki + Grafana com **dashboards provisionados** (JSON as code)
+- [x] **M1b** — Instrumentação enxuta zero-dep (`src/instrumentar.js`): OTLP HTTP fiel (envelope único + múltiplos logRecords) + flush em lote + **fallback sem collector** (nunca quebra o app) — 3/3 testes
+- [ ] **M2** — Alerts (webhook → Telegram), SLOs, traces completos (span hierarchy)
+
+## Quick start
+
+```bash
+docker compose up   # Grafana em http://localhost:3800 (admin/admin)
+```
+
+## Instrumentar seu app (zero deps)
+
+```js
+import { instrumentar } from './src/instrumentar.js';
+const logger = instrumentar('meu-app'); // OTLP → http://localhost:4318
+logger.info('app subiu', { porta: 3000 });
+await logger.flush();
+```
+
+Sem collector rodando? O fallback imprime no stdout — o app **nunca quebra**.
 
 ## Built with
 

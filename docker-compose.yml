@@ -1,0 +1,36 @@
+# Observa Stack — compose: otel-collector + loki + grafana com dashboards provisionados.
+# O app demo (kanbanex) é instrumentado e envia traces/metrics/logs pro collector.
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - ./otel/config.yaml:/etc/otel/config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:latest
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - dados_grafana:/var/lib/grafana
+    ports:
+      - "3800:3000"
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+volumes:
+  dados_grafana:

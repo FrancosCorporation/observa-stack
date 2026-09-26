@@ -1,0 +1,30 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "panels": [
+    {
+      "title": "Logs do app demo (via OTel -> Loki)",
+      "type": "logs",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 12 },
+      "targets": [{ "expr": "{service_name=\"kanbanex\"}", "refId": "A" }]
+    },
+    {
+      "title": "Requisicoes por minuto (metricas do app)",
+      "type": "timeseries",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [{ "expr": "{service_name=\"kanbanex\"} |= \"HTTP\"", "refId": "A" }]
+    },
+    {
+      "title": "Erros",
+      "type": "logs",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "targets": [{ "expr": "{service_name=\"kanbanex\"} |= \"erro\"", "refId": "A" }]
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "Kanbanex - Observability",
+  "uid": "kanbanex-obs"
+}
