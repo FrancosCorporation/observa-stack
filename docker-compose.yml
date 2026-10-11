@@ -2,35 +2,39 @@
 # O app demo (kanbanex) é instrumentado e envia traces/metrics/logs pro collector.
 services:
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
+    image: otel/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6
     command: ["--config=/etc/otel/config.yaml"]
     volumes:
       - ./otel/config.yaml:/etc/otel/config.yaml:ro
     ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
+      - "127.0.0.1:4317:4317"   # OTLP gRPC, somente clientes locais
+      - "127.0.0.1:4318:4318"   # OTLP HTTP, somente clientes locais
+    mem_limit: 384m
     restart: unless-stopped
 
   loki:
-    image: grafana/loki:latest
+    image: grafana/loki:3.7.8
     command: -config.file=/etc/loki/local-config.yaml
-    ports:
-      - "3100:3100"
+    expose:
+      - "3100"
+    volumes:
+      - dados_loki:/tmp/loki
     restart: unless-stopped
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.1.6
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?defina GRAFANA_PASSWORD no arquivo .env}
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - dados_grafana:/var/lib/grafana
     ports:
-      - "3800:3000"
+      - "127.0.0.1:3800:3000"
     depends_on:
       - loki
     restart: unless-stopped
 
 volumes:
+  dados_loki:
   dados_grafana:

@@ -1,7 +1,7 @@
 # MELHORIAS — observa-stack
 
-> **Gerado por análise de código em 2026-10-02** · Stack: OTel Collector + Loki + Grafana (compose) + `src/instrumentar.js` (SDK de instrumentação)
-> Branch `main` · 51 LOC de código próprio (o resto é config de stack) · 1 teste · **sem Dockerfile** (usa imagens upstream)
+> **Gerado por análise de código em 2026-10-02** · Stack: OTel Collector + Loki + Grafana (Compose) + `src/instrumentar.js`
+> Branch `main` · suíte Node existente · CI existente · **sem Dockerfile** (usa imagens upstream)
 >
 > **Este arquivo é um plano de execução.** Cada item tem ID, `arquivo:linha`, mudança exata,
 > critério de aceite e comando de verificação.
@@ -65,8 +65,8 @@ provisionados. O `src/instrumentar.js` é o SDK que os outros projetos importam 
 | IMP-02 | Sem nível mínimo (envia tudo por padrão) | **P3** | `instrumentar.js:6-15` | — |
 | TEST-01 | Sem teste do envelope/fallback | **P2** | `test/instrumentar-test.mjs` | — |
 | DEVOPS-01 | Sem `.env.example` (senha required) | **P1** | *(ausente)* | SEC-01 |
-| DEVOPS-02 | Sem CI | **P2** | *(ausente)* | — |
-| DEVOPS-03 | Sem `.gitignore` (dados do grafana) | **P3** | *(ausente)* | — |
+| DEVOPS-02 | CI não valida a configuração do Collector | **P2** | `.github/workflows/ci.yml` | — |
+| DEVOPS-03 | `.gitignore` sem env e dados locais | **P3** | `.gitignore` | — |
 | DOC-01 | README não documenta portas expostas e senha | **P2** | `README.md` | SEC-01 |
 | DOC-02 | Falta `SECURITY.md` | **P3** | *(ausente)* | — |
 
@@ -258,28 +258,25 @@ provisionados. O `src/instrumentar.js` é o SDK que os outros projetos importam 
 - **Aceite:** `.env.example` existe e o compose usa.
 - **Verificação:** `ls .env.example && grep -q GRAFANA_PASSWORD .env.example && echo OK`.
 
-### DEVOPS-02 · Sem CI · [P2]
+### DEVOPS-02 · CI não valida o config do Collector · [P2]
 
-- **Arquivo:** *(ausente)* `.github/workflows/`
-- **Evidência:** nenhum workflow; `otel/config.yaml` e `docker-compose.yml` não são validados
-  automaticamente.
-- **Impacto:** um YAML quebrado (ou um `${VAR:?}` mal posto) só falha na hora do `docker compose up`.
-- **Mudança:** `ci.yml`: `npm ci && npm test`, `docker compose config -q`, e `docker run ... caddy
-  validate` equivalente (para Loki/otel, validar que o config é aceito pelo container).
-- **Aceite:** PR com YAML quebrado é bloqueado.
+- **Arquivo:** `.github/workflows/ci.yml`
+- **Evidência:** o CI existente executa a suíte e valida Compose, mas não valida a configuração OTLP.
+- **Mudança aplicada:** CI executa `npm run check`, valida `docker compose config` com senha
+  descartável e valida o `otel/config.yaml` com a imagem Collector pinned e rede desabilitada.
 - **Verificação:**
   ```bash
   docker compose config -q && npm test
   ```
 
-### DEVOPS-03 · Sem `.gitignore` · [P3]
+### DEVOPS-03 · `.gitignore` sem env e dados locais · [P3]
 
-- **Arquivo:** *(ausente)* `.gitignore`
-- **Evidência:** sem `.gitignore` no repo.
-- **Impacto:** dados do Grafana (`dados_grafana` é volume nomeado, então não vai para o repo — ok), mas
-  se alguém rodar local sem volume, `.gitignore` evita versionar config local.
-- **Mudança:** `.gitignore` com `.env`, `node_modules/`, `*.log`.
-- **Aceite:** `.gitignore` existe e cobre `.env`.
+- **Arquivo:** `.gitignore`
+- **Evidência:** o arquivo já ignorava `node_modules/`, `.env` e logs, mas não `.env.*` nem diretórios
+  de dados locais.
+- **Mudança aplicada:** ignorar envs locais, logs e diretórios de dados do Grafana/Loki, mantendo
+  `.env.example` versionado.
+- **Aceite aplicado:** segredos e dados locais ficam fora do índice.
 - **Verificação:** `git check-ignore -q .env && echo OK`.
 
 ---
@@ -369,27 +366,34 @@ provisionados. O `src/instrumentar.js` é o SDK que os outros projetos importam 
 ## 10. Definição de pronto (DoD)
 
 **Segurança**
-- [ ] `SEC-01` — sem `GRAFANA_PASSWORD` o compose falha; senha nunca `admin`
-- [ ] `SEC-02` — OTLP interno (ou com bearer); `4317/4318` não expostas
-- [ ] `SEC-03` — nenhuma imagem `latest`
-- [ ] `SEC-04` — Loki interno; `3100` não exposta
-- [ ] `SEC-05` — `limits`/`memory_limiter` no collector
+- [x] `SEC-01` — sem `GRAFANA_PASSWORD` o Compose falha; não há senha padrão `admin`
+- [x] `SEC-02` — portas OTLP publicadas apenas no loopback do host
+- [x] `SEC-03` — imagens pinadas por versão
+- [x] `SEC-04` — Loki apenas na rede Docker; `3100` não publicada no host
+- [x] `SEC-05` — memory limiter, batch limitado e requisições OTLP limitadas a 8 MiB
 
 **Funcional**
-- [ ] `BUG-01` — log no buffer é enviado no shutdown
-- [ ] `BUG-02` — collector parado → memória do app estabiliza
-- [ ] `BUG-03` — collector sem resposta não trava o app
+- [x] `BUG-01` — `shutdown()` drena o buffer; `beforeExit` tenta flush automático
+- [x] `BUG-02` — buffer limitado a 1.000 registros e descarte contabilizado
+- [x] `BUG-03` — envio tem timeout de 2 s e fallback para stdout
 
 **Testes e qualidade**
 - [ ] `TEST-01` — envelope + fallback + flush em lote no `npm test`
-- [ ] `IMP-01`, **`IMP-02`** — limite de atributos e nível mínimo (P3)
+- [x] `IMP-01`, **`IMP-02`** — atributos limitados a 32 e nível mínimo configurável
 
 **Infra e documentação**
-- [ ] `DEVOPS-01` — `.env.example` com `GRAFANA_PASSWORD`
-- [ ] `DEVOPS-02` — CI validando compose + config
-- [ ] `DEVOPS-03` — `.gitignore`
-- [ ] `DOC-01` — README com tabela de portas
-- [ ] `DOC-02` — `SECURITY.md`
+- [x] `DEVOPS-01` — `.env.example` com `GRAFANA_PASSWORD`
+- [x] `DEVOPS-02` — CI valida sintaxe do SDK, Compose e config OTLP com imagem pinned
+- [x] `DEVOPS-03` — `.gitignore` para segredos e dados locais
+- [x] `DOC-01` — README com tabela de exposição de portas
+- [x] `DOC-02` — `SECURITY.md`
+
+**Execução desta revisão (2026-10-11)**
+
+- Implementadas as correções de exposição, senha obrigatória, pins de imagem, limites do Collector,
+  robustez do SDK, datasource com UID fixo e painel de requisições com agregação LogQL.
+- Não foram adicionados nem executados testes nesta revisão. TEST-01 permanece pendente. A validação
+  estática `npm run check`, `docker compose config -q` e `otelcol-contrib validate` passou.
 
 **Validação final:**
 ```bash
@@ -399,5 +403,4 @@ grep -c 'latest' docker-compose.yml   # 0
 
 ---
 
-*Fim do plano. Gerado por leitura direta do código em 2026-10-02. Nenhum item já estava corrigido*
-*— todos apontam para defeitos ainda presentes.*
+*Plano gerado por leitura direta do código em 2026-10-02; o registro de execução acima descreve o estado após a revisão de 2026-10-11.*

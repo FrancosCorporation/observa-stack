@@ -1,6 +1,10 @@
 node_modules/
 package-lock.json
 .env
+.env.*
+!.env.example
+*.log
+dados_grafana/
+dados_loki/
 dist/
 *.db
-*.log

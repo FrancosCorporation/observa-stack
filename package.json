@@ -6,6 +6,10 @@
   "type": "module",
   "license": "MIT",
   "author": "Rodolfo Franco (FrancosCorporation)",
-  "scripts": { "start": "docker compose up", "test": "node --test test/instrumentar-test.mjs" },
+  "scripts": {
+    "start": "docker compose up",
+    "check": "node --check src/instrumentar.js",
+    "test": "node --test test/instrumentar-test.mjs"
+  },
   "engines": { "node": ">=18" }
 }
