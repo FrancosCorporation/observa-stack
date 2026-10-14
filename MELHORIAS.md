@@ -404,3 +404,7 @@ grep -c 'latest' docker-compose.yml   # 0
 ---
 
 *Plano gerado por leitura direta do código em 2026-10-02; o registro de execução acima descreve o estado após a revisão de 2026-10-11.*
+
+## Registro de execução — 2026-10-14
+
+- **DEVOPS-04:** CI fixada (Ubuntu 24.04, Actions v7 por SHA, Node 22/24, `npm ci`, gate `npm audit --audit-level=high`); `package-lock.json` versionado (estava ignorado); piso Node elevado para 22.12.0. Criados `plan.md`/`resumo.md`.

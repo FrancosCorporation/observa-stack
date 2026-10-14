@@ -11,5 +11,5 @@
     "check": "node --check src/instrumentar.js",
     "test": "node --test test/instrumentar-test.mjs"
   },
-  "engines": { "node": ">=18" }
+  "engines": { "node": ">=22.12.0" }
 }
